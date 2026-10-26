@@ -1,9 +1,9 @@
 const tables={fuel:"fuelio_records",odo:"odo_readings",odoApp:"odo_trips"};
 const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{"content-type":"application/json","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const enc=new TextEncoder();
-const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/=/g,"").replace(/\\+/g,"-").replace(/\\//g,"_");
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
 async function sign(secret,value){const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return b64(await crypto.subtle.sign("HMAC",key,enc.encode(value)))}
-async function authorized(request,secret){const token=request.headers.get("authorization")?.replace(/^Bearer /,"")||"";const [expiry,signature]=token.split(".");if(!expiry||!signature||!/^\\d+$/.test(expiry)||Number(expiry)<Date.now())return false;const expected=await sign(secret,expiry);return signature.length===expected.length&&signature.split("").every((c,i)=>c===expected[i])}
+async function authorized(request,secret){const token=request.headers.get("authorization")?.replace(/^Bearer /,"")||"";const [expiry,signature]=token.split(".");if(!expiry||!signature||!/^\d+$/.test(expiry)||Number(expiry)<Date.now())return false;const expected=await sign(secret,expiry);return signature.length===expected.length&&signature.split("").every((c,i)=>c===expected[i])}
 export async function onRequest({request,env}){try{
 if(!env.DB)return json({error:"D1 database not bound"},503);
 if(!env.MYDRIVE_PASSWORD||env.MYDRIVE_PASSWORD.length<16)return json({error:"Cloud login is not configured. Set MYDRIVE_PASSWORD as a secret of at least 16 characters."},503);
